@@ -3,6 +3,7 @@
 import { Canvas, useThree } from "@react-three/fiber";
 import Match from "./threejs/Match";
 import Fingies from "./threejs/Fingies";
+import Fire from "./threejs/Fire";
 import BackgroundPlane from "./threejs/BackgroundPlane"
 import { OrbitControls } from "@react-three/drei";
 
@@ -20,6 +21,7 @@ export default function Home() {
         <pointLight position={[0,3.5,89]} color={"#ffaa00"} intensity={2} decay={0.5}/>
         <pointLight position={[-1,3.5,100]} color={"#ffaa00"} intensity={2} decay={0.5}/>
         <pointLight position={[1,3.5,100]} color={"#ffaa00"} intensity={2} decay={0.5}/>
+        <Fire origin={[0,0.5,90]} peakPoint={[0,5.5,90]}/>
       </Canvas>
     </div>
   );
