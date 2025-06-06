@@ -21,7 +21,9 @@ export default function Home() {
         <pointLight position={[0,3.5,89]} color={"#ffaa00"} intensity={2} decay={0.5}/>
         <pointLight position={[-1,3.5,100]} color={"#ffaa00"} intensity={2} decay={0.5}/>
         <pointLight position={[1,3.5,100]} color={"#ffaa00"} intensity={2} decay={0.5}/>
-        <Fire origin={[0,0.5,90]} peakPoint={[0,5.5,90]}/>
+        <Fire origin={[0,0.5,90]} peakPoint={[5,5.5,90]} smokeColor={[0.5,0.5,0.5,1]}
+          fireColors={[[0,0,0,0],[0.6,0.9,1,0.01],[1,0.5,0,0.1],[1,1,0,0.4],[1,1,1,0.4],[1,1,0,0.4],[1,0.5,0,0.5]]}
+        />
       </Canvas>
     </div>
   );
