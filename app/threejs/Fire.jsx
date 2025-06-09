@@ -1,12 +1,12 @@
 import { Points } from "@react-three/drei";
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { BufferAttribute, Vector2, Vector3, Vector4 } from "three";
 import {vertex, fragment} from "./shaders/fireParticlesShader";
 import { useFrame } from "@react-three/fiber";
 
 export default function Fire({
         count = 10000, origin = [0,0,0], peakPoint = [0,2,0], yDisplacement = 0.5, midColorStrength = 0.5, 
-        fireColors = [[1,1,0,1]], midDistanceColors=[[1,0,0,0.1]], smokeColor = [0.5,0.5,0.5,0.5], size = 1
+        fireColors = [[1,1,0,1]], midDistanceColors=[[1,0,0,0.1]], smokeColor = [0.5,0.5,0.5,0.5], size = 1, change=0
     })
 {
     const originVector = new Vector3(origin[0],origin[1],origin[2]);
@@ -23,6 +23,7 @@ export default function Fire({
     const pointsUniforms = useRef({
         uTime: {value:0},
         uSize: {value: size},
+        uYLength:{value: yLength},
         uFlameRise: {value: 0},
         uYDisplacement: {value: yDisplacement},
         uOriginPeakDistance: {value: yLength},
@@ -61,6 +62,12 @@ export default function Fire({
     }
 
     useFrame(({clock})=>{
+        pointsUniforms.current.uOriginPos.value = new Vector3(origin[0],origin[1] - change.current,origin[2]);
+
+        const randPeakDistanceChange = Math.sin(clock.getElapsedTime()) * 0.5;
+        //pointsUniforms.current.uYLength.value = yLength;
+        pointsUniforms.current.uOriginPeakDistance.value = yLength + change.current + randPeakDistanceChange;
+
         pointsUniforms.current.uTime.value = clock.getElapsedTime(); 
 
         if(pointsUniforms.current.uFlameRise.value >= yLength)
@@ -71,6 +78,7 @@ export default function Fire({
     return(
         <Points positions={basePositions}>
             <shaderMaterial
+                needsUpdate={true}
                 vertexShader={vertex}
                 fragmentShader={fragment}
                 alphaTest={true}

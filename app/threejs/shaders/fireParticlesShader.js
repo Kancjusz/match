@@ -8,6 +8,7 @@ export const vertex = `
 
     uniform float uTime;
     uniform float uSize;
+    uniform float uYLength;
     uniform float uFlameRise;
     uniform float uYDisplacement;
     uniform float uOriginPeakDistance;
@@ -32,7 +33,7 @@ export const vertex = `
 
         float yLength = uOriginPeakDistance;
 
-        float y = position.y * yLength + uFlameRise;
+        float y = position.y * uYLength + uFlameRise;
         if(y<0.) return;
 
         float bounds = fireFunction(y,yLength);
