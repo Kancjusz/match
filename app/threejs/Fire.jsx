@@ -66,7 +66,7 @@ export default function Fire({
 
         const randPeakDistanceChange = Math.sin(clock.getElapsedTime()) * 0.5;
         //pointsUniforms.current.uYLength.value = yLength;
-        pointsUniforms.current.uOriginPeakDistance.value = yLength + change.current + randPeakDistanceChange;
+        pointsUniforms.current.uOriginPeakDistance.value = yLength + change.current /2 + randPeakDistanceChange;
 
         pointsUniforms.current.uTime.value = clock.getElapsedTime(); 
 

@@ -1,7 +1,7 @@
 import { useGLTF } from '@react-three/drei';
 import {vertexStick, fragmentStick, vertexHead, fragmentHead} from "./shaders/matchShader";
 import { useFrame } from '@react-three/fiber';
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import Fire from "./Fire";
 import CustomShaderMaterial from 'three-custom-shader-material'
 import * as THREE from "three";
@@ -9,11 +9,11 @@ import * as THREE from "three";
 export default function Match(props) {
   const { nodes, materials } = useGLTF('/models/match.glb')
 
-  const maxDistance = 1;
+  const maxDistance = 0.5;
   
   const yTipCoord = 1.5;
 
-  const burnDirection = useRef(new THREE.Vector2(0,0));
+  const burnDirection = useRef(new THREE.Vector2((Math.random()-0.5)*2 * maxDistance,(Math.random()-0.5)*2 * maxDistance));
   const burnProgress = useRef(yTipCoord);
 
   let burnProgressMemo = useRef(yTipCoord);
@@ -22,22 +22,19 @@ export default function Match(props) {
   const headMaterial = useMemo(() => materials['Material.001'].clone(), []);
   const stickMaterial = useMemo(() => materials['Material.002'].clone(), []);
 
-  useEffect(()=>{
-    burnDirection.current = new THREE.Vector2((Math.random()-0.5)*2 * maxDistance,(Math.random()-0.5)*2 * maxDistance);
-  },[])
-
   const matchPos = new THREE.Vector3(props.position[0],props.position[1],props.position[2]);
   const baseUniforms = {
     uBurnDirection:{value: burnDirection.current},
     uBurnProgress:{value: burnProgress.current},
-    uMatchPos:{value: matchPos}
+    uMatchPos:{value: matchPos},
+    uMaxHeight:{value: yTipCoord}
   }
 
   const uniformsHead = useMemo(()=>(baseUniforms),[]);
   const uniformsStick = useMemo(()=>(baseUniforms),[]);
 
   useFrame(()=>{
-    burnProgressMemo.current -= 0.002;
+    burnProgressMemo.current -= 0.001;
 
     change.current = (yTipCoord - burnProgressMemo.current);
 
