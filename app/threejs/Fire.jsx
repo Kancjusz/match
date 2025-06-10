@@ -87,6 +87,7 @@ export default function Fire({
                 transparent={true}
                 uniforms={pointsUniforms.current}
                 defines={pointsDefines.current}
+                toneMapped={true}
             />
         </Points>
     );
