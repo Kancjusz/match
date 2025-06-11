@@ -1,6 +1,6 @@
 import React, { useRef } from 'react'
 import { useGLTF, useAnimations, Box } from '@react-three/drei'
-import { Physics, RigidBody } from "@react-three/rapier";
+import { Physics, RapierRigidBody, RigidBody } from "@react-three/rapier";
 import Match from "./Match";
 import { useFrame } from '@react-three/fiber';
 import * as THREE from "three";
@@ -21,6 +21,9 @@ export default function Fingies(props) {
   const animationYBounds = -1;
   
   const matchRigidBody = useRef();
+  const flameCorrectRotation = useRef(new THREE.Euler(0,0,0));
+  const prevEuler = useRef(new THREE.Euler(0,0,0));
+  const matchRigidbodyPosRef = useRef(new THREE.Vector3(0,0,0));
 
   useFrame(()=>{
     burnProgress.current -= 0.002;
@@ -44,7 +47,21 @@ export default function Fingies(props) {
       setTimeout(()=>{
         window.location.reload();
         //burnProgress.current = 0;
-      },10000);
+      },5000);
+    }
+
+    //console.log(matchRigidBody.current);
+    if(matchRigidBody.current != null)
+    {
+      const rotation = matchRigidBody.current.rotation();
+
+      const rotationEuler = new THREE.Euler().setFromQuaternion(new THREE.Quaternion(rotation.x,rotation.y,rotation.z,rotation.w));
+
+      flameCorrectRotation.current = new THREE.Euler(rotationEuler.x-prevEuler.current.x, rotationEuler.y-prevEuler.current.y, rotationEuler.z-prevEuler.current.z);
+      //console.log(rotationEuler.z + " | " + nextRotationEuler.z);
+      matchRigidbodyPosRef.current = matchRigidBody.current.translation();
+
+      prevEuler.current = rotationEuler;
     }
   });
 
@@ -73,7 +90,7 @@ export default function Fingies(props) {
       </group>
       <Physics>
         <RigidBody ref={matchRigidBody} mass={1000}>
-          <Match position={[0,-2,90]} scale={[0.9,0.9,0.9]} burnProgressPropRef={burnProgress}/>
+          <Match position={[0,-2,90]} scale={[0.9,0.9,0.9]} burnProgressPropRef={burnProgress} flameCorrectedRotationRef={flameCorrectRotation} matchRigidbodyPosRef={matchRigidbodyPosRef}/>
         </RigidBody>
         <RigidBody type='fixed'>
           <Box position={[0,-4.9,90]} args={[1,1,1]} receiveShadow={false} castShadow={false}>

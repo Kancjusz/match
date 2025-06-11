@@ -21,6 +21,7 @@ export default function Fire({
     const smokeColorV4 = new Vector4(smokeColor[0],smokeColor[1],smokeColor[2],smokeColor[3]);
 
     const originPos = useRef(origin);
+    const peakPos = useRef(peakPoint);
 
     const pointsUniforms = useRef({
         uTime: {value:0},
@@ -64,12 +65,12 @@ export default function Fire({
     }
 
     useFrame(({clock})=>{
-        pointsUniforms.current.uOriginPos.value = new Vector3(origin[0],origin[1] - change.current,origin[2]);
-        originPos.current = [origin[0],origin[1] - change.current,origin[2]];
+        //pointsUniforms.current.uOriginPos.value = new Vector3(origin[0],origin[1] - change.current,origin[2]);
 
         const randPeakDistanceChange = Math.sin(clock.getElapsedTime()) * 0.5;
         //pointsUniforms.current.uYLength.value = yLength;
         pointsUniforms.current.uOriginPeakDistance.value = yLength + change.current /2 + randPeakDistanceChange;
+        peakPos.current = [peakPos[0],pointsUniforms.current.uOriginPeakDistance.value/2,peakPos[2]];
 
         pointsUniforms.current.uTime.value = clock.getElapsedTime(); 
 
@@ -79,7 +80,7 @@ export default function Fire({
     });
 
     return(
-        <group>
+        <group position={[0,0,0]}>
             <Points positions={basePositions}>
                 <shaderMaterial
                     needsUpdate={true}
@@ -102,6 +103,8 @@ export default function Fire({
             <FirePointLight positionRef={originPos} offset={[0,1,-0.5]}/>
             <FirePointLight positionRef={originPos} offset={[0.5,1,0]}/>
             <FirePointLight positionRef={originPos} offset={[-0.5,1,0]}/>
+
+            <FirePointLight positionRef={peakPos} offset={[0,0,0]}/>
         </group>
     );
 }
