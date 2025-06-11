@@ -6,6 +6,8 @@ import BackgroundPlane from "./threejs/BackgroundPlane"
 import { OrbitControls } from "@react-three/drei";
 import { Suspense } from "react";
 import * as THREE from "three";
+import { Bloom, EffectComposer } from "@react-three/postprocessing";
+import { BlendFunction } from 'postprocessing'
 
 export default function Home() {
 
@@ -15,11 +17,21 @@ export default function Home() {
           toneMapping:THREE.ACESFilmicToneMapping, toneMappingExposure: 1.0, outputColorSpace: THREE.SRGBColorSpace
         }}>
         {/*<directionalLight color={"#ffffff"} position={[0,0,11]} intensity={3}/>*/}
+        <EffectComposer frameBufferType={THREE.HalfFloatType} depthBuffer={true}>
+          <Bloom 
+            blendFunction={BlendFunction.ADD}
+            intensity={0.5} 
+            luminanceThreshold={0.9} 
+            luminanceSmoothing={0.0}
+            mipmapBlur={true}
+          />
+        </EffectComposer>
         <OrbitControls/>
         <BackgroundPlane position={[0,0,50]}/>
         <Suspense>
           <Fingies position={[-0.85,-14,89.2]} rotation={[0,-Math.PI/2.7,0]}/>
         </Suspense>
+        <directionalLight color={"white"} position={[0,0,100]} intensity={0.1}/>
       </Canvas>
     </div>
   );

@@ -36,7 +36,7 @@ export const fragmentStick = `
     uniform float uBurnProgress;
 
     void main() {
-        float burnColorLerp = clamp(uBurnProgress - vWorldPos.y,0.,1.);
+        float burnColorLerp = clamp(uBurnProgress - vWorldPos.y -0.5,0.,1.);
 
         csm_Roughness = (2.- burnColorLerp) * csm_Roughness;
         csm_DiffuseColor = mix(vec4(vec3(0.),1.),csm_DiffuseColor,burnColorLerp);
@@ -82,7 +82,7 @@ export const fragmentHead = `
     uniform float uBurnProgress;
 
     void main() {
-        float burnColorLerp = clamp(uBurnProgress - vWorldPos.y,0.,1.);
+        float burnColorLerp = clamp(uBurnProgress - vWorldPos.y-0.5,0.,1.);
 
         csm_Roughness = (2.- burnColorLerp) * csm_Roughness;
         csm_DiffuseColor = mix(vec4(vec3(0.),1.),csm_DiffuseColor,burnColorLerp);

@@ -1,6 +1,6 @@
 import { Points } from "@react-three/drei";
 import { useEffect, useMemo, useRef } from "react";
-import { BufferAttribute, Vector2, Vector3, Vector4 } from "three";
+import { BufferAttribute, PointLight, Vector2, Vector3, Vector4 } from "three";
 import {vertex, fragment} from "./shaders/fireParticlesShader";
 import { useFrame } from "@react-three/fiber";
 
@@ -19,6 +19,8 @@ export default function Fire({
     const peak2Normalized = (new Vector2(peakVector.x - originVector.x,peakVector.z - originVector.z)).normalize();
 
     const smokeColorV4 = new Vector4(smokeColor[0],smokeColor[1],smokeColor[2],smokeColor[3]);
+
+    const originPos = useRef(origin);
 
     const pointsUniforms = useRef({
         uTime: {value:0},
@@ -51,18 +53,19 @@ export default function Fire({
 
         const y = Math.random();
 
-        basePositions[i] = xzVector.x 
+        basePositions[i] = xzVector.x;
         basePositions[i+1] = y;
         basePositions[i+2] = xzVector.y;
 
         
-        basePositions[i + count/2] = xzVector.x 
-        basePositions[i + count/2 + 1] = y-1
+        basePositions[i + count/2] = xzVector.x; 
+        basePositions[i + count/2 + 1] = y-1;
         basePositions[i + count/2 + 2] = xzVector.y;
     }
 
     useFrame(({clock})=>{
         pointsUniforms.current.uOriginPos.value = new Vector3(origin[0],origin[1] - change.current,origin[2]);
+        originPos.current = [origin[0],origin[1] - change.current,origin[2]];
 
         const randPeakDistanceChange = Math.sin(clock.getElapsedTime()) * 0.5;
         //pointsUniforms.current.uYLength.value = yLength;
@@ -76,19 +79,43 @@ export default function Fire({
     });
 
     return(
-        <Points positions={basePositions}>
-            <shaderMaterial
-                needsUpdate={true}
-                vertexShader={vertex}
-                fragmentShader={fragment}
-                alphaTest={true}
-                depthTest={true}
-                depthWrite={false}
-                transparent={true}
-                uniforms={pointsUniforms.current}
-                defines={pointsDefines.current}
-                toneMapped={true}
-            />
-        </Points>
+        <group>
+            <Points positions={basePositions}>
+                <shaderMaterial
+                    needsUpdate={true}
+                    vertexShader={vertex}
+                    fragmentShader={fragment}
+                    alphaTest={true}
+                    depthTest={true}
+                    depthWrite={false}
+                    transparent={true}
+                    uniforms={pointsUniforms.current}
+                    defines={pointsDefines.current}
+                    toneMapped={false}
+                />
+            </Points>
+            <FirePointLight positionRef={originPos} offset={[0,0.5,0.5]}/>
+            <FirePointLight positionRef={originPos} offset={[0,0.5,-0.5]}/>
+            <FirePointLight positionRef={originPos} offset={[0.5,0.5,0]}/>
+            <FirePointLight positionRef={originPos} offset={[-0.5,0.5,0]}/>
+            <FirePointLight positionRef={originPos} offset={[0,1,0.5]}/>
+            <FirePointLight positionRef={originPos} offset={[0,1,-0.5]}/>
+            <FirePointLight positionRef={originPos} offset={[0.5,1,0]}/>
+            <FirePointLight positionRef={originPos} offset={[-0.5,1,0]}/>
+        </group>
+    );
+}
+
+function FirePointLight({position, positionRef, offset})
+{
+    const ligthRef = useRef();
+    const pos = (position == undefined) ? positionRef : {current:position};
+
+    useFrame(()=>{
+        ligthRef.current.position.set(pos.current[0] + offset[0],pos.current[1]+ offset[1],pos.current[2]+ offset[2]);
+    });
+
+    return(
+        <pointLight ref={ligthRef} position={[0,0,0]} color={"#ff9955"} intensity={2} decay={2}/>
     );
 }

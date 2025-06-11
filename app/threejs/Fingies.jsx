@@ -44,7 +44,7 @@ export default function Fingies(props) {
       setTimeout(()=>{
         window.location.reload();
         //burnProgress.current = 0;
-      },3000);
+      },10000);
     }
   });
 

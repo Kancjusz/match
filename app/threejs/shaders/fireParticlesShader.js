@@ -132,7 +132,6 @@ export const fragment = `
         vec4 colWithMid = mix(color1,midColors, midColorsRatio);
         vec4 col = mix(color2,colWithMid,ratio2);
 
-
-        gl_FragColor = vec4(col.rgb,col.a * alpha * alpha2 * (1.-vPointOriginRatio));
+        gl_FragColor = vec4(col.rgb * (round(ratio2)+1.),clamp(col.a * alpha * alpha2 * pow(1.-vPointOriginRatio,3.),0.,1.));
     }
 `

@@ -5,6 +5,7 @@ import { useMemo, useRef } from 'react';
 import Fire from "./Fire";
 import CustomShaderMaterial from 'three-custom-shader-material'
 import * as THREE from "three";
+import { Select } from '@react-three/postprocessing';
 
 export default function Match({position, scale, yTipCoord = 1.5, maxDistance = 0.5, timeMultiplier = 0.001,  burnProgressPropRef = null}) {
   const { nodes, materials } = useGLTF('/models/match.glb')
@@ -61,14 +62,16 @@ export default function Match({position, scale, yTipCoord = 1.5, maxDistance = 0
             uniforms={uniformsStick}/>
         </mesh>
       </group>
-      <Fire count={120000} origin={[0,0.3,90]} peakPoint={[0,6,90]} smokeColor={[0.5,0.5,0.5,0.5]} yDisplacement={0.7}
-        fireColors={[[0,0,0,0],[0.6,0.9,1,0.05],[1,0.5,0,0.1],[1,1,0,0.4],[1,1,1,0.4],[1,1,0,0.4],[1,0.5,0,0.5]]}
-        midDistanceColors={[[1,1,0,0.1],[1,0.5,0,0.1],[1,0.2,0,0.05]]} midColorStrength={0.7} size={1.5} change={change}
+      <Fire count={120000} origin={[0,0.3,90]} peakPoint={[0,6,90]} smokeColor={[0.5,0.5,0.5,0.05]} yDisplacement={0.7}
+        fireColors={[[0,0,0,0],[0.6,0.9,1,0.005],[1,0.5,0,0.1],[1,1,0,0.4],[1,1,1,0.4],[1,1,0,0.4],[1,0.5,0,0.5]]}
+        midDistanceColors={[[1,1,0,0.01],[1,0.5,0,0.02],[1,0.1,0,0.05]]} midColorStrength={0.7} size={1.5} change={change}
       />
-      <pointLight position={[position[0],position[1]+5.5,position[2]+12]} color={"#ffaa00"} intensity={2} decay={0.5}/>
-      <pointLight position={[position[0],position[1]+5.5,position[2]-1]} color={"#ffaa00"} intensity={2} decay={0.5}/>
-      <pointLight position={[position[0]-1,position[1]+5.5,position[2]+10]} color={"#ffaa00"} intensity={2} decay={0.5}/>
-      <pointLight position={[position[0]+1,position[1]+5.5,position[2]+10]} color={"#ffaa00"} intensity={2} decay={0.5}/>
+      
+      <pointLight position={[position[0],position[1]+5.5,position[2]+12]} color={"#ff9955"} intensity={2000} decay={4}/>
+      <pointLight position={[position[0],position[1]+5.5,position[2]-1]} color={"#ff9955"} intensity={2000} decay={4}/>
+      <pointLight position={[position[0]-1,position[1]+5.5,position[2]+10]} color={"#ff9955"} intensity={2000} decay={4}/>
+      <pointLight position={[position[0]+1,position[1]+5.5,position[2]+10]} color={"#ff9955"} intensity={2000} decay={4}/>
+
     </group>
   )
 }
