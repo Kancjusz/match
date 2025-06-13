@@ -20,7 +20,7 @@ export default function Home() {
         <EffectComposer frameBufferType={THREE.HalfFloatType} depthBuffer={true}>
           <Bloom 
             blendFunction={BlendFunction.ADD}
-            intensity={0.5} 
+            intensity={1} 
             luminanceThreshold={0.9} 
             luminanceSmoothing={0.0}
             mipmapBlur={true}

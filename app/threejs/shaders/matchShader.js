@@ -6,7 +6,7 @@ export const vertexStick = `
     uniform float uMaxHeight;
 
     void main() {
-        vWorldPos = (modelMatrix * vec4(csm_Position,1.)).xyz;
+        vWorldPos = (vec4(csm_Position,1.)).xyz;
 
         vec3 worldPos = (vec4(csm_Position,1.)).xyz;
         float burnPosLerp = clamp(uBurnProgress - vWorldPos.y,0.,1.);
@@ -51,7 +51,7 @@ export const vertexHead = `
     uniform float uMaxHeight;
 
     void main() {
-        vWorldPos = (modelMatrix * vec4(csm_Position,1.)).xyz;
+        vWorldPos = (vec4(csm_Position,1.)).xyz;
 
         vec3 worldPos = (vec4(csm_Position,1.)).xyz;
         float burnPosLerp = clamp(uBurnProgress - vWorldPos.y,0.,1.);

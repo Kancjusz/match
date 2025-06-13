@@ -1,4 +1,4 @@
-import React, { useRef } from 'react'
+import React, { createElement, useRef, useState } from 'react'
 import { useGLTF, useAnimations, Box } from '@react-three/drei'
 import { Physics, RapierRigidBody, RigidBody } from "@react-three/rapier";
 import Match from "./Match";
@@ -8,58 +8,88 @@ import * as THREE from "three";
 export default function Fingies(props) {
   const group = useRef()
   const { nodes, materials, animations } = useGLTF('/models/fingies.glb')
-  const { actions } = useAnimations(animations, group)
+  const { actions, names } = useAnimations(animations, group)
 
-  const actionNames = ['ThrowRight','ThrowLeft'];
-  const directions = [1,-1];
+  const directions = [-1,1];
 
-  const yMax = 1.5;
+  const yMax = 4;
   const animationSpeed = 0.7;
   const burnProgress = useRef(yMax);
   const animationPlayed = useRef(false);
 
-  const animationYBounds = -1;
+  const animationYBounds = 1.2;
   
-  const matchRigidBody = useRef();
   const flameCorrectRotation = useRef(new THREE.Euler(0,0,0));
   const prevEuler = useRef(new THREE.Euler(0,0,0));
-  const matchRigidbodyPosRef = useRef(new THREE.Vector3(0,0,0));
+
+  const rigidBodyProps = {
+    position:[0,0,0],
+    mass:1000, 
+    lockRotations:true,
+  }
+
+  const [matchElement, setMatchElement] = useState(<Match {...{
+        position:[0,20,90], 
+        scale:[0.9,0.9,0.9],
+        burnProgressPropRef:burnProgress,
+        flameCorrectedRotationRef:flameCorrectRotation, 
+        yTipCoord:yMax
+      }} key={1}/>);
+  const matchRigidBody = useRef(new RapierRigidBody());
 
   useFrame(()=>{
-    burnProgress.current -= 0.002;
+    burnProgress.current -= 0.001;
 
     if(burnProgress.current <= animationYBounds && !animationPlayed.current)
     {
       const randAnimationIndex = Math.round(Math.random());
-      const clip = actions[actionNames[randAnimationIndex]];
+      const clip = actions[names[randAnimationIndex]];
 
       const direction = directions[randAnimationIndex];
 
       clip.setLoop(THREE.LoopOnce);
       clip.setEffectiveTimeScale(animationSpeed);
-      clip.play();
+      clip.reset().fadeIn(0.5).fadeOut(0.9).play();
       animationPlayed.current = true;
 
-      //burnProgress.current = yMax;
+      matchRigidBody.current.lockRotations(false,true);
+
       matchRigidBody.current.applyImpulse({ x: 70 * direction, y: 50, z: 0 }, true);
       matchRigidBody.current.applyTorqueImpulse({ x: 20, y: 0, z: 70 * -direction }, true);
 
       setTimeout(()=>{
-        window.location.reload();
-        //burnProgress.current = 0;
+        burnProgress.current = 1000;
+        animationPlayed.current = false;
+        
+        const key = Math.random();
+        
+        flameCorrectRotation.current = new THREE.Euler(0,0,0);
+        setMatchElement(<Match {...{
+          position:[0,20,90], 
+          scale:[0.9,0.9,0.9],
+          burnProgressPropRef:burnProgress,
+          flameCorrectedRotationRef:flameCorrectRotation, 
+          yTipCoord:yMax
+        }} key={key}/>);
+
+        matchRigidBody.current.resetForces();
+        matchRigidBody.current.resetTorques();
+        matchRigidBody.current.setTranslation({x:0,y:0,z:0},true);
+        matchRigidBody.current.setRotation({x:0,y:0,z:0,w:1},true);
+        matchRigidBody.current.lockRotations(true,true);
+        matchRigidBody.current.setLinvel({x:0,y:0,z:0},true);
+        matchRigidBody.current.setAngvel({x:0,y:0,z:0},true);
+ 
       },5000);
     }
 
-    //console.log(matchRigidBody.current);
-    if(matchRigidBody.current != null)
+    if(burnProgress.current != 1000)
     {
       const rotation = matchRigidBody.current.rotation();
 
       const rotationEuler = new THREE.Euler().setFromQuaternion(new THREE.Quaternion(rotation.x,rotation.y,rotation.z,rotation.w));
 
       flameCorrectRotation.current = new THREE.Euler(rotationEuler.x-prevEuler.current.x, rotationEuler.y-prevEuler.current.y, rotationEuler.z-prevEuler.current.z);
-      //console.log(rotationEuler.z + " | " + nextRotationEuler.z);
-      matchRigidbodyPosRef.current = matchRigidBody.current.translation();
 
       prevEuler.current = rotationEuler;
     }
@@ -89,8 +119,9 @@ export default function Fingies(props) {
         </group>
       </group>
       <Physics>
-        <RigidBody ref={matchRigidBody} mass={1000}>
-          <Match position={[0,-2,90]} scale={[0.9,0.9,0.9]} burnProgressPropRef={burnProgress} flameCorrectedRotationRef={flameCorrectRotation} matchRigidbodyPosRef={matchRigidbodyPosRef}/>
+        <RigidBody {...rigidBodyProps} ref={matchRigidBody} >
+          {matchElement}
+          {/*<Match position={[0,10,90]} scale={[0.9,0.9,0.9]} burnProgressPropRef={burnProgress} flameCorrectedRotationRef={flameCorrectRotation} matchRigidbodyRef={matchRigidBody} yTipCoord={yMax}/>*/}
         </RigidBody>
         <RigidBody type='fixed'>
           <Box position={[0,-4.9,90]} args={[1,1,1]} receiveShadow={false} castShadow={false}>

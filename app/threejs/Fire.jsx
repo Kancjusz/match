@@ -68,7 +68,6 @@ export default function Fire({
         //pointsUniforms.current.uOriginPos.value = new Vector3(origin[0],origin[1] - change.current,origin[2]);
 
         const randPeakDistanceChange = Math.sin(clock.getElapsedTime()) * 0.5;
-        //pointsUniforms.current.uYLength.value = yLength;
         pointsUniforms.current.uOriginPeakDistance.value = yLength + change.current /2 + randPeakDistanceChange;
         peakPos.current = [peakPos[0],pointsUniforms.current.uOriginPeakDistance.value/2,peakPos[2]];
 
