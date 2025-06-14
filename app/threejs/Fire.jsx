@@ -6,7 +6,7 @@ import { useFrame } from "@react-three/fiber";
 
 export default function Fire({
         count = 10000, origin = [0,0,0], peakPoint = [0,2,0], yDisplacement = 0.5, midColorStrength = 0.5, 
-        fireColors = [[1,1,0,1]], midDistanceColors=[[1,0,0,0.1]], smokeColor = [0.5,0.5,0.5,0.5], size = 1, change=0
+        fireColors = [[1,1,0,1]], midDistanceColors=[[1,0,0,0.1]], smokeColor = [0.5,0.5,0.5,0.5], size = 1, change=0, peakPointCallback=null
     })
 {
     const originVector = new Vector3(origin[0],origin[1],origin[2]);
@@ -22,6 +22,8 @@ export default function Fire({
 
     const originPos = useRef(origin);
     const peakPos = useRef(peakPoint);
+    const intensityMultiplier = useRef(1);
+    const prevPeak = useRef(peakVector);
 
     const pointsUniforms = useRef({
         uTime: {value:0},
@@ -57,7 +59,6 @@ export default function Fire({
         basePositions[i] = xzVector.x;
         basePositions[i+1] = y;
         basePositions[i+2] = xzVector.y;
-
         
         basePositions[i + count/2] = xzVector.x; 
         basePositions[i + count/2 + 1] = y-1;
@@ -67,13 +68,30 @@ export default function Fire({
     useFrame(({clock})=>{
         //pointsUniforms.current.uOriginPos.value = new Vector3(origin[0],origin[1] - change.current,origin[2]);
 
-        const randPeakDistanceChange = Math.sin(clock.getElapsedTime()) * 0.5;
-        pointsUniforms.current.uOriginPeakDistance.value = yLength + change.current /2 + randPeakDistanceChange;
+        const peakTab = peakPointCallback();
+        let newPeakVector = new Vector3(peakTab[0],peakTab[1],peakTab[2])
+
+        newPeakVector = prevPeak.current.lerp(newPeakVector,0.1);
+        prevPeak.current = newPeakVector;        
+
+        const dynamicYLength = originVector.distanceTo(newPeakVector);
+
+        const newPeak2Normalized = (new Vector2(newPeakVector.x - originVector.x,newPeakVector.z - originVector.z)).normalize();
+        pointsUniforms.current.uPeak2Normalized.value = newPeak2Normalized;
+
+        const newHeightVector = new Vector3(originVector.x,newPeakVector.y,originVector.z)
+        const newSideDistance = newHeightVector.distanceTo(newPeakVector);
+        pointsUniforms.current.uSideDistance.value = newSideDistance;
+
+        const randPeakDistanceChange = (Math.sin(clock.getElapsedTime()) + 1) * 0.75 - 1;
+        pointsUniforms.current.uOriginPeakDistance.value = dynamicYLength + change.current/2 + randPeakDistanceChange;
         peakPos.current = [peakPos[0],pointsUniforms.current.uOriginPeakDistance.value/2,peakPos[2]];
+
+        intensityMultiplier.current = (randPeakDistanceChange*2 + dynamicYLength + 1.5)*0.5/dynamicYLength;
 
         pointsUniforms.current.uTime.value = clock.getElapsedTime(); 
 
-        if(pointsUniforms.current.uFlameRise.value >= yLength)
+        if(pointsUniforms.current.uFlameRise.value >= dynamicYLength)
             pointsUniforms.current.uFlameRise.value = 0;
         pointsUniforms.current.uFlameRise.value += 0.01;
     });
@@ -94,27 +112,28 @@ export default function Fire({
                     toneMapped={false}
                 />
             </Points>
-            <FirePointLight positionRef={originPos} offset={[0,0.5,0.5]}/>
-            <FirePointLight positionRef={originPos} offset={[0,0.5,-0.5]}/>
-            <FirePointLight positionRef={originPos} offset={[0.5,0.5,0]}/>
-            <FirePointLight positionRef={originPos} offset={[-0.5,0.5,0]}/>
-            <FirePointLight positionRef={originPos} offset={[0,1,0.5]}/>
-            <FirePointLight positionRef={originPos} offset={[0,1,-0.5]}/>
-            <FirePointLight positionRef={originPos} offset={[0.5,1,0]}/>
-            <FirePointLight positionRef={originPos} offset={[-0.5,1,0]}/>
+            <FirePointLight positionRef={originPos} offset={[0,0.5,0.5]} intensityMultiplierRef={intensityMultiplier}/>
+            <FirePointLight positionRef={originPos} offset={[0,0.5,-0.5]} intensityMultiplierRef={intensityMultiplier}/>
+            <FirePointLight positionRef={originPos} offset={[0.5,0.5,0]} intensityMultiplierRef={intensityMultiplier}/>
+            <FirePointLight positionRef={originPos} offset={[-0.5,0.5,0]} intensityMultiplierRef={intensityMultiplier}/>
+            <FirePointLight positionRef={originPos} offset={[0,1,0.5]} intensityMultiplierRef={intensityMultiplier}/>
+            <FirePointLight positionRef={originPos} offset={[0,1,-0.5]} intensityMultiplierRef={intensityMultiplier}/>
+            <FirePointLight positionRef={originPos} offset={[0.5,1,0]} intensityMultiplierRef={intensityMultiplier}/>
+            <FirePointLight positionRef={originPos} offset={[-0.5,1,0]} intensityMultiplierRef={intensityMultiplier}/>
 
-            <FirePointLight positionRef={peakPos} offset={[0,0,0]}/>
+            <FirePointLight positionRef={peakPos} offset={[0,0,0]} intensityMultiplierRef={intensityMultiplier}/>
         </group>
     );
 }
 
-function FirePointLight({position, positionRef, offset})
+function FirePointLight({position, positionRef, offset, intensityMultiplierRef = null})
 {
     const ligthRef = useRef();
     const pos = (position == undefined) ? positionRef : {current:position};
 
     useFrame(()=>{
         ligthRef.current.position.set(pos.current[0] + offset[0],pos.current[1]+ offset[1],pos.current[2]+ offset[2]);
+        ligthRef.current.intensity = intensityMultiplierRef != null ? intensityMultiplierRef.current * 2 : 2;
     });
 
     return(

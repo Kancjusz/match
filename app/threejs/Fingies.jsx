@@ -1,6 +1,6 @@
 import React, { createElement, useEffect, useRef, useState } from 'react'
 import { useGLTF, useAnimations, Box } from '@react-three/drei'
-import { Physics, RapierRigidBody, RigidBody } from "@react-three/rapier";
+import { Physics, RapierRigidBody, RigidBody, vec3 } from "@react-three/rapier";
 import Match from "./Match";
 import { useFrame } from '@react-three/fiber';
 import * as THREE from "three";
@@ -22,6 +22,7 @@ export default function Fingies(props) {
   
   const flameCorrectRotation = useRef(new THREE.Euler(0,0,0));
   const prevEuler = useRef(new THREE.Euler(0,0,0));
+  const matchVelocity = useRef(new THREE.Vector3(0,0,0));
 
   const rigidBodyProps = {
     position:[0,0,0],
@@ -34,7 +35,8 @@ export default function Fingies(props) {
         scale:[0.9,0.9,0.9],
         burnProgressPropRef:burnProgress,
         flameCorrectedRotationRef:flameCorrectRotation, 
-        yTipCoord:yMax
+        yTipCoord:yMax,
+        matchVelocityRef:matchVelocity
       }} key={1}/>);
   const matchRigidBody = useRef(new RapierRigidBody());
 
@@ -59,6 +61,8 @@ export default function Fingies(props) {
 
   useFrame(()=>{
     burnProgress.current -= 0.001;
+
+    matchVelocity.current = vec3(matchRigidBody.current.linvel());
 
     if(burnProgress.current <= animationYBounds && !animationPlayed.current)
     {
@@ -94,7 +98,8 @@ export default function Fingies(props) {
           scale:[0.9,0.9,0.9],
           burnProgressPropRef:burnProgress,
           flameCorrectedRotationRef:flameCorrectRotation, 
-          yTipCoord:yMax
+          yTipCoord:yMax,
+          matchVelocityRef:matchVelocity
         }} key={key}/>);
 
         matchRigidBody.current.resetForces();

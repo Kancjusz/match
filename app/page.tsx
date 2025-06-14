@@ -31,7 +31,7 @@ export default function Home() {
         <Suspense>
           <Fingies position={[-0.85,-14,89.2]} rotation={[0,-Math.PI/2.7,0]}/>
         </Suspense>
-        <directionalLight color={"white"} position={[0,0,100]} intensity={0.1}/>
+        <directionalLight color={"white"} position={[0,0,100]} intensity={0.05}/>
       </Canvas>
     </div>
   );
