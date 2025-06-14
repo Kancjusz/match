@@ -1,4 +1,4 @@
-import React, { createElement, useRef, useState } from 'react'
+import React, { createElement, useEffect, useRef, useState } from 'react'
 import { useGLTF, useAnimations, Box } from '@react-three/drei'
 import { Physics, RapierRigidBody, RigidBody } from "@react-three/rapier";
 import Match from "./Match";
@@ -11,6 +11,7 @@ export default function Fingies(props) {
   const { actions, names } = useAnimations(animations, group)
 
   const directions = [-1,1];
+  const throwNames = ["ThrowLeft","ThrowRight"];
 
   const yMax = 4;
   const animationSpeed = 0.7;
@@ -37,13 +38,32 @@ export default function Fingies(props) {
       }} key={1}/>);
   const matchRigidBody = useRef(new RapierRigidBody());
 
+  useEffect(()=>{
+    const openClip = actions["Open"];
+    openClip.setLoop(THREE.LoopOnce);
+    openClip.setEffectiveTimeScale(1.2);
+    openClip.clampWhenFinished = true;
+    openClip.reset().play();
+
+    setTimeout(()=>{
+      openClip.clampWhenFinished = false;
+      openClip.stop();
+
+      const grabClip = actions["Grab"];
+      grabClip.setLoop(THREE.LoopOnce);
+      grabClip.setEffectiveTimeScale(0.95);
+      grabClip.clampWhenFinished = true;
+      grabClip.reset().fadeIn(0.9).fadeOut(0.5).play();
+    },1750);
+  },[])
+
   useFrame(()=>{
     burnProgress.current -= 0.001;
 
     if(burnProgress.current <= animationYBounds && !animationPlayed.current)
     {
       const randAnimationIndex = Math.round(Math.random());
-      const clip = actions[names[randAnimationIndex]];
+      const clip = actions[throwNames[randAnimationIndex]];
 
       const direction = directions[randAnimationIndex];
 
@@ -56,6 +76,11 @@ export default function Fingies(props) {
 
       matchRigidBody.current.applyImpulse({ x: 70 * direction, y: 50, z: 0 }, true);
       matchRigidBody.current.applyTorqueImpulse({ x: 20, y: 0, z: 70 * -direction }, true);
+
+      const openClip = actions["Open"];
+      openClip.setLoop(THREE.LoopOnce);
+      openClip.clampWhenFinished = true;
+      openClip.reset().play();
 
       setTimeout(()=>{
         burnProgress.current = 1000;
@@ -80,6 +105,17 @@ export default function Fingies(props) {
         matchRigidBody.current.setLinvel({x:0,y:0,z:0},true);
         matchRigidBody.current.setAngvel({x:0,y:0,z:0},true);
  
+
+        setTimeout(()=>{
+          openClip.clampWhenFinished = false;
+          openClip.stop();
+
+          const grabClip = actions["Grab"];
+          grabClip.setLoop(THREE.LoopOnce);
+          grabClip.setEffectiveTimeScale(0.95);
+          grabClip.clampWhenFinished = true;
+          grabClip.reset().fadeIn(0.9).fadeOut(0.5).play();
+        },1750);
       },5000);
     }
 
