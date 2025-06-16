@@ -1,5 +1,6 @@
 export const vertex = `
 
+    varying vec4 projectedPos;
     varying float vRadius;
     varying float vCameraDist;
     varying float vPointOriginRatio;
@@ -15,6 +16,11 @@ export const vertex = `
     uniform float uSideDistance;
     uniform vec2 uPeak2Normalized;
     uniform vec3 uOriginPos;
+    uniform vec2 uPointer;
+
+    #define MAX_POINTER_DIST 1.
+    #define MAX_POINTER_DIST_TWO 5.
+    #define MAX_POINTER_ORIGIN_DIST 0.3
 
     float ONE_OVER_LOG10 = 1. / log(10.);
 
@@ -70,13 +76,46 @@ export const vertex = `
 
         gl_PointSize = 25. * (1.-cameraDist);
 
-        gl_Position = projectionMatrix * newPosition;
+        vec4 projectedPointer = projectionMatrix * modelViewMatrix * vec4(uPointer,1.,1.);
+        projectedPos = projectionMatrix * newPosition;
+
+        vec2 offsetVector2 = normalize(vec2(projectedPos.x - projectedPointer.x,0.));
+        float pointerDisplacementFactor2 = smoothstep(0.,1.,sqrt(clamp(projectedPos.y - projectedPointer.y + uYDisplacement,0.,1.)));
+
+        float inBounds = clamp(uPointer.y - uOriginPos.y,0.,1.);
+
+        float heightRatio = (uOriginPeakDistance-PointPeakDistance)/(uOriginPeakDistance-uYDisplacement);
+        heightRatio = clamp(smoothstep(0.,1.,heightRatio),0.,1.);
+        float heightFactor = clamp(sqrt(log10((heightRatio+0.01)*100.))*0.5,0.,1.);
+
+        float smth = smoothstep(1.,0.,abs(projectedPointer.x - projectedPos.x)*4.);
+        float smth2 = smoothstep(0.,1.,abs(projectedPointer.x - projectedPos.x)*2.);
+
+        float pointerDisplaceModifier = (smth * smth2 + 0.5 * smth * smth2 + 0.5 * (1.-smth2))/2.;
+        pointerDisplaceModifier = smoothstep(0.,1.,pointerDisplaceModifier) * inBounds * pow(pointerDisplacementFactor2/uOriginPeakDistance,1./2.) * heightFactor * pow(heightRatio,3.);
+
+        vec2 displaceDetachedDirection = -vec2(uPointer.x - uOriginPos.x,0.1) * 2.;
+        vRadius = 0.; 
+        if(uPointer.y < uOriginPos.y + uYDisplacement + MAX_POINTER_ORIGIN_DIST/2. 
+        && distance(uPointer,uOriginPos.xy) > MAX_POINTER_ORIGIN_DIST
+        && (uPointer.x - finalPos.x) * (uPointer.x - uOriginPos.x) < 0.)
+        {
+            vRadius = (2.-distance(finalPos.xy,uPointer))/3.;
+            displaceDetachedDirection = mix(vec2(0,0),displaceDetachedDirection,vRadius);
+        }
+        
+        vec2 finalOffset = offsetVector2 * heightFactor * pow(heightRatio,2.) * pow(pointerDisplacementFactor2/uOriginPeakDistance,1./2.) * inBounds;
+
+        vec2 projectedPointerDisplacedPosition = projectedPos.xy + offsetVector2 * 4. * pointerDisplaceModifier + displaceDetachedDirection * 0.5 * vRadius;
+
+        gl_Position = vec4(projectedPointerDisplacedPosition,projectedPos.zw);
+        //gl_Position = projectedPos;
     }
 `
 
 export const fragment = `
 
-    varying vec3 pos;
+    varying vec4 projectedPos;
     varying float vRadius;
     varying float vCameraDist;
     varying float vPointOriginRatio;
@@ -88,6 +127,7 @@ export const fragment = `
     uniform vec4 uColors[COLORS_AMOUNT];
     uniform vec4 uMidDistanceColors[MID_COLORS_AMOUNT];
     uniform vec4 uSmokeColor;
+    uniform vec2 uPointer;
 
     float PI = 3.1415926535897932384626433832795;
 
@@ -132,6 +172,16 @@ export const fragment = `
         vec4 colWithMid = mix(color1,midColors, midColorsRatio);
         vec4 col = mix(color2,colWithMid,ratio2);
 
+        float xCol = 0.;
+        vec2 colol = projectedPos.xy;
+        if(colol.x <= 1.) 
+            xCol = colol.x;
+
+        float yCol = 0.;
+        if(colol.y <= 1.) 
+            yCol = colol.y;
+
         gl_FragColor = vec4(col.rgb * (round(ratio2)+1.),clamp(col.a * alpha * alpha2 * pow(1.-vPointOriginRatio,3.),0.,1.));
+        //gl_FragColor = vec4(vec3(clamp(vRadius,0.,1.)),1.);
     }
 `

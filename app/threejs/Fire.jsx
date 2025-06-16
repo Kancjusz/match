@@ -2,7 +2,7 @@ import { Points } from "@react-three/drei";
 import { useEffect, useMemo, useRef } from "react";
 import { BufferAttribute, PointLight, Vector2, Vector3, Vector4 } from "three";
 import {vertex, fragment} from "./shaders/fireParticlesShader";
-import { useFrame } from "@react-three/fiber";
+import { useFrame, useThree } from "@react-three/fiber";
 
 export default function Fire({
         count = 10000, origin = [0,0,0], peakPoint = [0,2,0], yDisplacement = 0.5, midColorStrength = 0.5, 
@@ -38,7 +38,8 @@ export default function Fire({
         uPeak2Normalized: {value: peak2Normalized},
         uColors: {value: fireColors.map((e)=>{return new Vector4(e[0],e[1],e[2],e[3])})},
         uMidDistanceColors: {value: midDistanceColors.map((e)=>{return new Vector4(e[0],e[1],e[2],e[3])})},
-        uSmokeColor: {value: smokeColorV4}
+        uSmokeColor: {value: smokeColorV4},
+        uPointer: {value: new Vector2(0,0)},
     });
 
     const pointsDefines = useRef({
@@ -65,7 +66,7 @@ export default function Fire({
         basePositions[i + count/2 + 2] = xzVector.y;
     }
 
-    useFrame(({clock})=>{
+    useFrame(({clock,pointer,camera})=>{
         //pointsUniforms.current.uOriginPos.value = new Vector3(origin[0],origin[1] - change.current,origin[2]);
 
         const peakTab = peakPointCallback();
@@ -90,6 +91,22 @@ export default function Fire({
         intensityMultiplier.current = (randPeakDistanceChange*2 + dynamicYLength + 1.5)*0.5/dynamicYLength;
 
         pointsUniforms.current.uTime.value = clock.getElapsedTime(); 
+
+        let depth = originVector.z;
+        const cameraOffset = camera.position.z;
+        if ( depth < cameraOffset ) depth -= cameraOffset;
+        else depth += cameraOffset;
+
+        let fov = camera.fov * Math.PI / 180; 
+        fov = 2 * Math.tan( fov / 2 ) * Math.abs(depth);
+
+        const fovXy = new Vector2(fov,fov/camera.aspect);
+        const pointerToWorldFov = new Vector2(
+            pointer.x * fovXy.x, 
+            pointer.y * fovXy.y + change.current - 0.5
+        );
+
+        pointsUniforms.current.uPointer.value = pointerToWorldFov;
 
         if(pointsUniforms.current.uFlameRise.value >= dynamicYLength)
             pointsUniforms.current.uFlameRise.value = 0;
