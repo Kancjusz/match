@@ -106,7 +106,7 @@ export const vertex = `
         
         vec2 finalOffset = offsetVector2 * heightFactor * pow(heightRatio,2.) * pow(pointerDisplacementFactor2/uOriginPeakDistance,1./2.) * inBounds;
 
-        vec2 projectedPointerDisplacedPosition = projectedPos.xy + offsetVector2 * 4. * pointerDisplaceModifier + displaceDetachedDirection * 0.5 * vRadius;
+        vec2 projectedPointerDisplacedPosition = projectedPos.xy + offsetVector2 * 4. * pointerDisplaceModifier + displaceDetachedDirection * 0.5 * vRadius * inBounds;
 
         gl_Position = vec4(projectedPointerDisplacedPosition,projectedPos.zw);
         //gl_Position = projectedPos;
