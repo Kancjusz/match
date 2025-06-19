@@ -23,6 +23,7 @@ export default function Fingies(props) {
   const flameCorrectRotation = useRef(new THREE.Euler(0,0,0));
   const prevEuler = useRef(new THREE.Euler(0,0,0));
   const matchVelocity = useRef(new THREE.Vector3(0,0,0));
+  const wasPutOutRef = useRef(false);
 
   const rigidBodyProps = {
     position:[0,0,0],
@@ -36,7 +37,8 @@ export default function Fingies(props) {
         burnProgressPropRef:burnProgress,
         flameCorrectedRotationRef:flameCorrectRotation, 
         yTipCoord:yMax,
-        matchVelocityRef:matchVelocity
+        matchVelocityRef:matchVelocity,
+        wasPutOutRef:wasPutOutRef
       }} key={1}/>);
   const matchRigidBody = useRef(new RapierRigidBody());
 
@@ -60,9 +62,10 @@ export default function Fingies(props) {
   },[])
 
   useFrame(()=>{
-    burnProgress.current -= 0.001;
-
     matchVelocity.current = vec3(matchRigidBody.current.linvel());
+    if(wasPutOutRef.current) return;
+
+    burnProgress.current -= 0.001;
 
     if(burnProgress.current <= animationYBounds && !animationPlayed.current)
     {
@@ -99,7 +102,8 @@ export default function Fingies(props) {
           burnProgressPropRef:burnProgress,
           flameCorrectedRotationRef:flameCorrectRotation, 
           yTipCoord:yMax,
-          matchVelocityRef:matchVelocity
+          matchVelocityRef:matchVelocity,
+          wasPutOutRef:wasPutOutRef
         }} key={key}/>);
 
         matchRigidBody.current.resetForces();
@@ -120,6 +124,8 @@ export default function Fingies(props) {
           grabClip.setEffectiveTimeScale(0.95);
           grabClip.clampWhenFinished = true;
           grabClip.reset().fadeIn(0.9).fadeOut(0.5).play();
+
+          wasPutOutRef.current = false;
         },1750);
       },5000);
     }

@@ -8,7 +8,7 @@ import * as THREE from "three";
 
 export default function Match({
   position, scale, yTipCoord = 1.5, maxDistance = 0.5, timeMultiplier = 0.001,  
-  burnProgressPropRef = null, flameCorrectedRotationRef = null, matchVelocityRef = null
+  burnProgressPropRef = null, flameCorrectedRotationRef = null, matchVelocityRef = null, wasPutOutRef = null
 }) {
   const { nodes, materials } = useGLTF('/models/match.glb')
   const peakPoint = [0,6,90];
@@ -33,6 +33,7 @@ export default function Match({
   const uniformsStick = useMemo(()=>(baseUniforms),[]);
 
   const fireGroupRef = useRef(new THREE.Group());
+  const fireEventMeshRef = useRef(null);
   
   const peakDisplacementMultiplier = 0.2;
   const peakDisplacementVector = useCallback(()=>{
@@ -51,6 +52,8 @@ export default function Match({
   },[]);
 
   useFrame(()=>{
+    if(wasPutOutRef.current) return;
+
     burnProgress.current = (burnProgressPropRef == null) ? (burnProgress.current - 1 * timeMultiplier) : burnProgressPropRef.current;
 
     change.current = (yTipCoord - burnProgress.current);
@@ -68,6 +71,8 @@ export default function Match({
 
     fireGroupRef.current.position.set(0,matchPos.y+yTipCoord-1.5-change.current,0);
     fireGroupRef.current.rotateOnAxis(new THREE.Vector3(0,0,1),-euler.z);
+
+    fireEventMeshRef.current.position.set(matchPos.x,matchPos.y+yTipCoord-1.5-change.current,matchPos.z+1);
   });
 
   return (
@@ -94,15 +99,20 @@ export default function Match({
             uniforms={uniformsStick}/>
         </mesh>
       </group>
-      <group position={[0,matchPos.y+yTipCoord-1.5,0]} ref={fireGroupRef}>
+      <group position={[0,matchPos.y+yTipCoord-1.5,0]} ref={fireGroupRef} >
         <Fire count={120000} origin={[0,-0.2,90]} 
           peakPoint={peakPoint} 
           peakPointCallback={peakDisplacementVector}
           smokeColor={[0.5,0.5,0.5,0.05]} yDisplacement={0.7}
           fireColors={[[0,0,0,0],[0.6,0.9,1,0.005],[1,0.5,0,0.1],[1,1,0,0.4],[1,1,1,0.4],[1,1,0,0.4],[1,0.5,0,0.5]]}
           midDistanceColors={[[1,1,0,0.01],[1,0.5,0,0.02],[1,0.1,0,0.05]]} midColorStrength={0.7} size={1.5} change={change}
+          wasPutOutRef={wasPutOutRef}
         />
       </group>
+      <mesh ref={fireEventMeshRef} onClick={()=>{wasPutOutRef.current = false;}}>
+        <planeGeometry args={[1,1]}/>
+        <meshStandardMaterial opacity={0} transparent={true}/>
+      </mesh>
     </group>
   )
 }

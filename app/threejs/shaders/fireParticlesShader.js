@@ -11,6 +11,7 @@ export const vertex = `
     uniform float uSize;
     uniform float uYLength;
     uniform float uFlameRise;
+    uniform float uOnFireFactor;
     uniform float uYDisplacement;
     uniform float uOriginPeakDistance;
     uniform float uSideDistance;
@@ -34,47 +35,24 @@ export const vertex = `
         return sin(-3.*y/(length*0.5))*log10(y/(length*0.5))*uSize;
     }
 
-    void main() {
-        //CALCULATING POSITION
+    float putOutFireFunction(float y,float length)
+    {
+        return log(y+1.);
+    }
 
-        float yLength = uOriginPeakDistance;
+    float putOutFireDisplacementFunction(float y,float length)
+    {
+        return log(y) * sin(y);
+    }
 
-        float y = position.y * uYLength + uFlameRise;
-        if(y<0.) return;
+    float putOutFireDisplacementOppositeFunction(float y,float length)
+    {
+        return log(y) * sin(-y);
+    }
 
-        float bounds = fireFunction(y,yLength);
-        vRadius = bounds;
-
-        vec2 xzVector = vec2(position.x,position.z);
-
-        float displacementMultiplier = pow(y/yLength,2.);
-        if(y > yLength*0.5)
-            displacementMultiplier = pow(((y/yLength)-sqrt(y/yLength/2.)),log10(9.)) + y/yLength/2.;
-
-        vec3 finalPos = vec3(0.);
-
-        //random dispacement
-        float randX = sin(sin(uTime * 2.) * (y/yLength) * 5. * bounds * cos(bounds * 10.)) * 0.2 * (0.1/bounds);
-        float randZ = sin(sin(uTime * 2.) * (y/yLength) * 5. * bounds * cos(bounds * 10.)) * 0.2 * (0.1/bounds);
-
-        midPointDistanceRatio = distance(vec2(0.),xzVector);
-
-        finalPos.x = uOriginPos.x + xzVector.x * bounds + uPeak2Normalized.x * uSideDistance * displacementMultiplier + randX;
-        finalPos.y = uOriginPos.y + y;
-        finalPos.z = uOriginPos.z + xzVector.y * bounds + uPeak2Normalized.y * uSideDistance * displacementMultiplier + randZ;
-
-        //SETTING THE POSITION
+    vec4 pointerDisplacedPosition(vec3 finalPos, float PointPeakDistance)
+    {
         vec4 newPosition = modelViewMatrix * vec4(finalPos, 1.0);
-
-        float cameraDist = distance(cameraPosition,newPosition.xyz);
-
-        cameraDist = clamp(cameraDist / (distance(cameraPosition,vec3(0.)) * 2.),0.,1.);
-
-        vDisplacedFireSmokeRatio = (0.5 * uOriginPeakDistance - uYDisplacement) / (uOriginPeakDistance - uYDisplacement);
-        float PointPeakDistance = distance(finalPos,uOriginPos + vec3(0.,uYDisplacement,0.));
-        vPointOriginRatio = PointPeakDistance/(uOriginPeakDistance-uYDisplacement);
-
-        gl_PointSize = 25. * (1.-cameraDist);
 
         vec4 projectedPointer = projectionMatrix * modelViewMatrix * vec4(uPointer,1.,1.);
         projectedPos = projectionMatrix * newPosition;
@@ -106,10 +84,73 @@ export const vertex = `
         
         vec2 finalOffset = offsetVector2 * heightFactor * pow(heightRatio,2.) * pow(pointerDisplacementFactor2/uOriginPeakDistance,1./2.) * inBounds;
 
-        vec2 projectedPointerDisplacedPosition = projectedPos.xy + offsetVector2 * 4. * pointerDisplaceModifier + displaceDetachedDirection * 0.5 * vRadius * inBounds;
+        vec2 projectedPointerDisplacedPosition = projectedPos.xy + offsetVector2 * 4. * pointerDisplaceModifier + displaceDetachedDirection * 1. * vRadius * inBounds;
 
-        gl_Position = vec4(projectedPointerDisplacedPosition,projectedPos.zw);
+        return vec4(projectedPointerDisplacedPosition,projectedPos.zw);
+    }
+
+    void main() {
+        //CALCULATING POSITION
+
+        float yLength = uOriginPeakDistance;
+
+        float y = position.y * uYLength + uFlameRise;
+        if(y<0.) return;
+
+        float bounds = fireFunction(y,yLength);
+        float putOutBounds = putOutFireFunction(y,position.y * uYLength);
+
+        vec2 xzVector = vec2(position.x,position.z);
+
+        float displacementMultiplier = pow(y/yLength,2.);
+        if(y > yLength*0.5)
+            displacementMultiplier = pow(((y/yLength)-sqrt(y/yLength/2.)),log10(9.)) + y/yLength/2.;
+
+        vec3 finalPos = vec3(0.);
+        vec3 putOutPos = vec3(0.);
+
+        //random dispacement
+        float randX = sin(sin(uTime * 2.) * (y/yLength) * 5. * bounds * cos(bounds * 10.)) * 0.2 * (0.1/bounds);
+        float randZ = sin(sin(uTime * 2.) * (y/yLength) * 5. * bounds * cos(bounds * 10.)) * 0.2 * (0.1/bounds);
+
+        float randFunc = mix(0.,1.,(xzVector.x * xzVector.y));
+        float putOutDisplacement = mix(
+            putOutFireDisplacementFunction(y,position.y * uYLength),
+            putOutFireDisplacementOppositeFunction(y,position.y * uYLength),
+            randFunc
+        );
+
+        midPointDistanceRatio = distance(vec2(0.),xzVector);
+
+        //SETTING FIRE WORLD POS
+        finalPos.x = uOriginPos.x + xzVector.x * bounds + uPeak2Normalized.x * uSideDistance * displacementMultiplier + randX;
+        finalPos.y = uOriginPos.y + y;
+        finalPos.z = uOriginPos.z + xzVector.y * bounds + uPeak2Normalized.y * uSideDistance * displacementMultiplier + randZ;
+
+        //SETTING PUT OUT FIRE WORLD POS
+        putOutPos.x = uOriginPos.x + xzVector.x * putOutBounds + putOutDisplacement + randX;;
+        putOutPos.y = uOriginPos.y + y;
+        putOutPos.z = uOriginPos.z + xzVector.y * putOutBounds + putOutDisplacement + randZ;
+
+        //SETTING THE POSITION
+
+        vec3 firePos = mix(putOutPos,finalPos,uOnFireFactor);
+
+        float cameraDist = distance(cameraPosition,(modelViewMatrix * vec4(firePos, 1.0)).xyz);
+
+        cameraDist = clamp(cameraDist / (distance(cameraPosition,vec3(0.)) * 2.),0.,1.);
+
+        vDisplacedFireSmokeRatio = (0.5 * uOriginPeakDistance - uYDisplacement) / (uOriginPeakDistance - uYDisplacement);
+        float PointPeakDistance = distance(firePos,uOriginPos + vec3(0.,uYDisplacement,0.));
+        vPointOriginRatio = PointPeakDistance/(uOriginPeakDistance-uYDisplacement);
+
+        gl_PointSize = 30. * (1.-cameraDist);
+
+        vec4 finalProjectedPos = pointerDisplacedPosition(firePos,PointPeakDistance);
+        
         //gl_Position = projectedPos;
+        //gl_Position = projectionMatrix * modelViewMatrix * vec4(putOutPos,1.);
+        gl_Position = finalProjectedPos;
     }
 `
 
@@ -123,6 +164,7 @@ export const fragment = `
     varying float vDisplacedFireSmokeRatio;
 
     uniform float uTime;
+    uniform float uOnFireFactor;
     uniform float uMidColorStrength;
     uniform vec4 uColors[COLORS_AMOUNT];
     uniform vec4 uMidDistanceColors[MID_COLORS_AMOUNT];
@@ -156,8 +198,10 @@ export const fragment = `
 
         vec4 color2 = uSmokeColor;
 
-        float ratio = smoothstep(vDisplacedFireSmokeRatio,vDisplacedFireSmokeRatio-0.2,vPointOriginRatio);
-        float ratio2 = smoothstep(vDisplacedFireSmokeRatio,vDisplacedFireSmokeRatio-0.01,vPointOriginRatio);
+        float displacedFireSmokeRatio = mix(0.1,vDisplacedFireSmokeRatio,uOnFireFactor);
+
+        float ratio = smoothstep(displacedFireSmokeRatio,displacedFireSmokeRatio-0.2,vPointOriginRatio);
+        float ratio2 = smoothstep(displacedFireSmokeRatio,displacedFireSmokeRatio-0.01,vPointOriginRatio);
         float alpha2 = mix(0.05,1.,ratio);
 
         float midColorsRatio = max(0.,(midPointDistanceRatio-(1.-uMidColorStrength))*(1./(uMidColorStrength)));
@@ -172,16 +216,12 @@ export const fragment = `
         vec4 colWithMid = mix(color1,midColors, midColorsRatio);
         vec4 col = mix(color2,colWithMid,ratio2);
 
-        float xCol = 0.;
-        vec2 colol = projectedPos.xy;
-        if(colol.x <= 1.) 
-            xCol = colol.x;
+        col.rgb = mix(uSmokeColor.rgb,col.rgb,uOnFireFactor);
 
-        float yCol = 0.;
-        if(colol.y <= 1.) 
-            yCol = colol.y;
+        float alphaOnFireFactor = mix(0.5,1.,uOnFireFactor);
+        float alphaCombined = clamp(col.a * alpha * alpha2 * pow(1.-vPointOriginRatio,3.),0.,1.);
 
-        gl_FragColor = vec4(col.rgb * (round(ratio2)+1.),clamp(col.a * alpha * alpha2 * pow(1.-vPointOriginRatio,3.),0.,1.));
+        gl_FragColor = vec4(col.rgb * (round(ratio2)+1.) * alphaOnFireFactor,alphaCombined);
         //gl_FragColor = vec4(vec3(clamp(vRadius,0.,1.)),1.);
     }
 `

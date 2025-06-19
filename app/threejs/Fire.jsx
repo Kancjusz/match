@@ -1,12 +1,13 @@
 import { Points } from "@react-three/drei";
 import { useRef } from "react";
-import { Vector2, Vector3, Vector4 } from "three";
+import { MathUtils, Vector2, Vector3, Vector4 } from "three";
 import {vertex, fragment} from "./shaders/fireParticlesShader";
 import { useFrame } from "@react-three/fiber";
 
 export default function Fire({
         count = 10000, origin = [0,0,0], peakPoint = [0,2,0], yDisplacement = 0.5, midColorStrength = 0.5, 
-        fireColors = [[1,1,0,1]], midDistanceColors=[[1,0,0,0.1]], smokeColor = [0.5,0.5,0.5,0.5], size = 1, change=0, peakPointCallback=null
+        fireColors = [[1,1,0,1]], midDistanceColors=[[1,0,0,0.1]], smokeColor = [0.5,0.5,0.5,0.5], size = 1, change=0, 
+        peakPointCallback = null, wasPutOutRef = null
     })
 {
     const originVector = new Vector3(origin[0],origin[1],origin[2]);
@@ -44,6 +45,7 @@ export default function Fire({
         uMidDistanceColors: {value: midDistanceColors.map((e)=>{return new Vector4(e[0],e[1],e[2],e[3])})},
         uSmokeColor: {value: smokeColorV4},
         uPointer: {value: new Vector2(0,0)},
+        uOnFireFactor: {value: 1}
     });
 
     const pointsDefines = useRef({
@@ -71,8 +73,6 @@ export default function Fire({
     }
 
     useFrame(({clock,pointer,camera})=>{
-        //pointsUniforms.current.uOriginPos.value = new Vector3(origin[0],origin[1] - change.current,origin[2]);
-
         const time = clock.getElapsedTime(); 
 
         //POINTER TO WORLD POSITION
@@ -94,7 +94,7 @@ export default function Fire({
         pointsUniforms.current.uPointer.value = pointerToWorldFov;
 
         //FLAME SHIFT BASED ON POINTER MOVEMENT
-        if(Math.abs(pointerToWorldFov.x - prevPointerPos.current.x) >= 1) prevPointerPos.current.lerp(pointerToWorldFov,0.5);
+        if(Math.abs(pointerToWorldFov.x - prevPointerPos.current.x) >= 10) prevPointerPos.current = pointerToWorldFov;
 
         const v2Origin = new Vector2(originVector.x,originVector.y);
         const flameShiftData = getFlameShiftVectorAndTime(pointerToWorldFov,prevPointerPos.current,v2Origin,time,prevTime.current,0.1);
@@ -105,43 +105,70 @@ export default function Fire({
             pointerFlameShiftVector.current = pointerFlameShiftVector.current.lerp(flameShiftData.flameShiftVector,0.5);
         },flameShiftData.pointerToOriginTime*1000);
 
-        //FLAME SHIFT BASED ON MATCH MOVEMENT
-        const peakTab = peakPointCallback();
-        let newPeakVector = new Vector3(peakTab[0],peakTab[1],peakTab[2]);
+        let dynamicYLength = yLength;
+        let dynamicYLength2 = yLength;
 
-        newPeakVector.x += pointerFlameShiftVector.current.x;
-        newPeakVector.y += pointerFlameShiftVector.current.y;
+        if(!wasPutOutRef.current)
+        {
+            //FLAME SHIFT BASED ON MATCH MOVEMENT
+            const peakTab = peakPointCallback();
+            let newPeakVector = new Vector3(peakTab[0],peakTab[1],peakTab[2]);
 
-        newPeakVector = prevPeak.current.lerp(newPeakVector,0.1);
-        prevPeak.current = newPeakVector;        
+            newPeakVector.x += pointerFlameShiftVector.current.x;
+            newPeakVector.y += pointerFlameShiftVector.current.y;
 
-        const dynamicYLength = originVector.distanceTo(newPeakVector);
-        const dynamicYLength2 = originVector.distanceTo(new Vector3(peakTab[0],peakTab[1],peakTab[2]));
+            let checkerYLength = originVector.distanceTo(newPeakVector);
 
-        const newPeak2Normalized = (new Vector2(newPeakVector.x - originVector.x,newPeakVector.z - originVector.z)).normalize();
-        pointsUniforms.current.uPeak2Normalized.value = newPeak2Normalized;
+            newPeakVector.y = Math.max(newPeakVector.y,1.5);
 
-        const newHeightVector = new Vector3(originVector.x,newPeakVector.y,originVector.z)
-        const newSideDistance = newHeightVector.distanceTo(newPeakVector);
-        pointsUniforms.current.uSideDistance.value = newSideDistance;
+            newPeakVector = prevPeak.current.lerp(newPeakVector,0.1);
+            prevPeak.current = newPeakVector;        
+
+            dynamicYLength = originVector.distanceTo(newPeakVector);
+            dynamicYLength2 = originVector.distanceTo(new Vector3(peakTab[0],peakTab[1],peakTab[2]));
+
+            const newPeak2Normalized = (new Vector2(newPeakVector.x - originVector.x,newPeakVector.z - originVector.z)).normalize();
+            pointsUniforms.current.uPeak2Normalized.value = newPeak2Normalized;
+
+            const newHeightVector = new Vector3(originVector.x,newPeakVector.y,originVector.z)
+            const newSideDistance = newHeightVector.distanceTo(newPeakVector);
+            pointsUniforms.current.uSideDistance.value = newSideDistance;
+
+            if(checkerYLength/2 <= 0.5 && dynamicYLength/2 <= 1.6) 
+            {
+                wasPutOutRef.current = true;
+                console.log(newPeakVector);
+                console.log(checkerYLength + " | " + wasPutOutRef.current);
+            }
+        }
 
         //RANDOM FLAME MOVEMENT
         const randPeakDistanceChange = (Math.sin(time) + 1) * 0.75 - 1;
+        intensityMultiplier.current = (randPeakDistanceChange*2 + dynamicYLength + 1.5)*0.5/dynamicYLength * pointsUniforms.current.uOnFireFactor.value;
+
         pointsUniforms.current.uOriginPeakDistance.value = dynamicYLength + change.current/2 + randPeakDistanceChange;
         peakPos.current = [peakPos[0],pointsUniforms.current.uOriginPeakDistance.value/2,peakPos[2]];
 
-        intensityMultiplier.current = (randPeakDistanceChange*2 + dynamicYLength + 1.5)*0.5/dynamicYLength;
-
         pointsUniforms.current.uTime.value = time; 
+
+        if(pointsUniforms.current.uOnFireFactor.value >= 1 && wasPutOutRef.current)
+            pointsUniforms.current.uFlameRise.value = -dynamicYLength2 + yDisplacement*1.5;
+        else if(pointsUniforms.current.uOnFireFactor.value <= 0 && !wasPutOutRef.current)
+            pointsUniforms.current.uFlameRise.value = 0;
 
         if(pointsUniforms.current.uFlameRise.value >= dynamicYLength2)
             pointsUniforms.current.uFlameRise.value = 0;
-        pointsUniforms.current.uFlameRise.value += 0.01;
+        pointsUniforms.current.uFlameRise.value += 0.01 * MathUtils.lerp(0.5, 1, pointsUniforms.current.uOnFireFactor.value);
+
+        if(wasPutOutRef.current && pointsUniforms.current.uOnFireFactor.value > 0)
+            pointsUniforms.current.uOnFireFactor.value -= 0.1;
+        else if(!wasPutOutRef.current && pointsUniforms.current.uOnFireFactor.value < 1)
+            pointsUniforms.current.uOnFireFactor.value += 0.1;
     });
 
     return(
         <group position={[0,0,0]}>
-            <Points positions={basePositions}>
+            <Points positions={basePositions} >
                 <shaderMaterial
                     needsUpdate={true}
                     vertexShader={vertex}
@@ -202,11 +229,15 @@ function getFlameShiftVectorAndTime(pointerWorldPos, prevPointerPos, originPos, 
     const pointerOriginVector = new Vector2(0,0);
     pointerOriginVector.subVectors(prevPointerPos,originPos);
 
+
     let angle = Math.atan2(velocity.y,velocity.x) - Math.atan2(pointerOriginVector.y,pointerOriginVector.x);
+
     if (angle > Math.PI)         
         angle -= 2 * Math.PI; 
     else if (angle <= -Math.PI)  
         angle += 2 * Math.PI; 
+
+    //console.log(Math.acos(velocity.normalize().dot(pointerOriginVector.normalize()))+ " | " + angle);
 
     let flameShiftVector = velocity.rotateAround(new Vector2(0,0),angle);
 

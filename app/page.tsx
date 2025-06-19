@@ -3,7 +3,6 @@
 import { Canvas } from "@react-three/fiber";
 import Fingies from "./threejs/Fingies";
 import BackgroundPlane from "./threejs/BackgroundPlane"
-import { OrbitControls } from "@react-three/drei";
 import { Suspense } from "react";
 import * as THREE from "three";
 import { Bloom, EffectComposer } from "@react-three/postprocessing";
@@ -26,7 +25,6 @@ export default function Home() {
             mipmapBlur={true}
           />
         </EffectComposer>
-        <OrbitControls/>
         <BackgroundPlane position={[0,0,50]}/>
         <Suspense>
           <Fingies position={[-0.85,-14,89.2]} rotation={[0,-Math.PI/2.7,0]}/>
