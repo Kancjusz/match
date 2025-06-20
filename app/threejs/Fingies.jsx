@@ -41,7 +41,7 @@ export default function Fingies({position, rotation, setColorChange}) {
         matchVelocityRef:matchVelocity,
         wasPutOutRef:wasPutOutRef
       }} key={1}/>);
-  const matchRigidBody = useRef(new RapierRigidBody());
+  const matchRigidBody = useRef();
 
   useEffect(()=>{
     const openClip = actions["Open"];
@@ -63,8 +63,7 @@ export default function Fingies({position, rotation, setColorChange}) {
   },[])
 
   useFrame(()=>{
-    console.log(typeof(matchRigidBody.current));
-    if(!matchRigidBody.current.isValid()) return;
+    if(!(matchRigidBody.current instanceof RapierRigidBody)) return;
     matchVelocity.current = vec3(matchRigidBody.current.linvel());
 
     if(!wasPutOutRef.current && prevWasPutOutRef.current) setColorChange();

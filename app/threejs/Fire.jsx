@@ -1,5 +1,5 @@
 import { Points } from "@react-three/drei";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { MathUtils, Vector2, Vector3, Vector4 } from "three";
 import {vertex, fragment} from "./shaders/fireParticlesShader";
 import { useFrame } from "@react-three/fiber";
@@ -28,7 +28,9 @@ export default function Fire({
 
     const prevPeak = useRef(peakVector);
     const prevPointerPos = useRef(new Vector2(0,0));
+    const pointerPos = useRef(new Vector2(0,0));
     const prevTime = useRef(0);
+    const pointerOut = useRef(true);
 
     const pointsUniforms = useRef({
         uTime: {value:0},
@@ -45,7 +47,8 @@ export default function Fire({
         uMidDistanceColors: {value: midDistanceColors.map((e)=>{return new Vector4(e[0],e[1],e[2],e[3])})},
         uSmokeColor: {value: smokeColorV4},
         uPointer: {value: new Vector2(0,0)},
-        uOnFireFactor: {value: 1}
+        uOnFireFactor: {value: 1},
+        uWidthRatio: {value:1}
     });
 
     const pointsDefines = useRef({
@@ -72,8 +75,46 @@ export default function Fire({
         basePositions[i + count/2 + 2] = xzVector.y;
     }
 
-    useFrame(({clock,pointer,camera})=>{
+    function onTouchDownEvent(e)
+    {
+        const x = (e.touches[0].clientX/window.innerWidth) * 2 - 1;
+        const y = (e.touches[0].clientY/window.innerHeight) * -2 + 1;
+
+        pointerPos.current = new Vector2(x,y);
+        pointerOut.current = false;
+    }
+    function onTouchUpEvent(e){pointerOut.current = true;}
+
+    function onMouseMove(e)
+    {
+        const x = (e.clientX/window.innerWidth) * 2 - 1;
+        const y = (e.clientY/window.innerHeight) * -2 + 1;
+
+        pointerPos.current = new Vector2(x,y);
+        pointerOut.current = false;
+    }
+    function onMouseOut(e){pointerOut.current = true;}
+
+
+    useEffect(()=>{
+        window.addEventListener("touchmove",onTouchDownEvent);
+        window.addEventListener("touchend",onTouchUpEvent);
+
+        window.addEventListener("mousemove",onMouseMove);
+        window.addEventListener("mouseout",onMouseOut);
+        return(()=>{
+            window.removeEventListener("touchmove",onTouchDownEvent);
+            window.removeEventListener("touchend",onTouchUpEvent);
+
+            window.removeEventListener("mousemove",onMouseMove);
+            window.removeEventListener("mouseout",onMouseOut);
+        })
+    },[])
+
+    useFrame(({clock,camera})=>{
         const time = clock.getElapsedTime(); 
+
+        const pointer = pointerPos.current;
 
         //POINTER TO WORLD POSITION
         let depth = originVector.z;
@@ -84,14 +125,16 @@ export default function Fire({
         let fov = camera.fov * Math.PI / 180; 
         fov = 2 * Math.tan( fov / 2 ) * Math.abs(depth);
 
-        const fovXy = new Vector2(fov,fov/camera.aspect);
+        pointsUniforms.current.uWidthRatio.value = window.innerWidth/1920;
+
+        const fovXy = new Vector2(fov * (window.innerWidth/1920),(fov)/(1920/919));
         const pointerToWorldFov = new Vector2(
             pointer.x * fovXy.x, 
             pointer.y * fovXy.y + change.current - 0.5
         );
 
         //SET POINTER TO UNIFORMS
-        pointsUniforms.current.uPointer.value = pointerToWorldFov;
+        pointsUniforms.current.uPointer.value = pointerOut.current ? new Vector2(-1,-1) : pointerToWorldFov;
 
         //FLAME SHIFT BASED ON POINTER MOVEMENT
         if(Math.abs(pointerToWorldFov.x - prevPointerPos.current.x) >= 10) prevPointerPos.current = pointerToWorldFov;

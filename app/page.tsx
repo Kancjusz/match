@@ -7,6 +7,7 @@ import { Suspense, useState } from "react";
 import * as THREE from "three";
 import { Bloom, EffectComposer } from "@react-three/postprocessing";
 import { BlendFunction } from 'postprocessing'
+import { PerspectiveCamera } from "@react-three/drei";
 
 export default function Home() {
 
@@ -14,9 +15,10 @@ export default function Home() {
 
   return (
     <div className="h-[100vh] w-full absolute">
-      <Canvas className="h-full w-full absolute bg-amber-700" camera={{position:[0,0,100]}} gl={{
+      <Canvas className="h-full w-full absolute bg-amber-700" gl={{
           toneMapping:THREE.ACESFilmicToneMapping, toneMappingExposure: 1.0, outputColorSpace: THREE.SRGBColorSpace
         }}>
+        <PerspectiveCamera makeDefault position={[0,0,100]} fov={75}/>
         <EffectComposer frameBufferType={THREE.HalfFloatType} depthBuffer={true}>
           <Bloom 
             blendFunction={BlendFunction.ADD}

@@ -11,6 +11,7 @@ export const vertex = `
     uniform float uSize;
     uniform float uYLength;
     uniform float uFlameRise;
+    uniform float uWidthRatio;
     uniform float uOnFireFactor;
     uniform float uYDisplacement;
     uniform float uOriginPeakDistance;
@@ -54,11 +55,11 @@ export const vertex = `
     {
         vec4 newPosition = modelViewMatrix * vec4(finalPos, 1.0);
 
-        vec4 projectedPointer = projectionMatrix * modelViewMatrix * vec4(uPointer,1.,1.);
-        projectedPos = projectionMatrix * newPosition;
+        vec4 projectedPointer = projectionMatrix * modelViewMatrix * vec4(uPointer,1.,1.) * uWidthRatio;
+        projectedPos = projectionMatrix * newPosition * uWidthRatio;
 
         vec2 offsetVector2 = normalize(vec2(projectedPos.x - projectedPointer.x,0.));
-        float pointerDisplacementFactor2 = smoothstep(0.,1.,sqrt(clamp(projectedPos.y - projectedPointer.y + uYDisplacement,0.,1.)));
+        float pointerDisplacementFactor2 = smoothstep(0.,1.,sqrt(clamp(projectedPos.y/ uWidthRatio - projectedPointer.y/ uWidthRatio + uYDisplacement,0.,1.)));
 
         float inBounds = clamp(uPointer.y - uOriginPos.y,0.,1.);
 
@@ -136,15 +137,15 @@ export const vertex = `
 
         vec3 firePos = mix(putOutPos,finalPos,uOnFireFactor);
 
-        float cameraDist = distance(cameraPosition,(modelViewMatrix * vec4(firePos, 1.0)).xyz);
+        float cameraDist = distance(cameraPosition,(modelMatrix * vec4(firePos, 1.0)).xyz);
 
-        cameraDist = clamp(cameraDist / (distance(cameraPosition,vec3(0.)) * 2.),0.,1.);
+        cameraDist = clamp(cameraDist / (distance(cameraPosition,vec3(0.))),0.,1.);
 
         vDisplacedFireSmokeRatio = (0.5 * uOriginPeakDistance - uYDisplacement) / (uOriginPeakDistance - uYDisplacement);
         float PointPeakDistance = distance(firePos,uOriginPos + vec3(0.,uYDisplacement,0.));
         vPointOriginRatio = PointPeakDistance/(uOriginPeakDistance-uYDisplacement);
 
-        gl_PointSize = 30. * (1.-cameraDist);
+        gl_PointSize = 15. * (1.-cameraDist);
 
         vec4 finalProjectedPos = pointerDisplacedPosition(firePos,PointPeakDistance);
         
