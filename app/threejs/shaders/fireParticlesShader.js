@@ -113,7 +113,7 @@ export const vertex = `
         float randX = sin(sin(uTime * 2.) * (y/yLength) * 5. * bounds * cos(bounds * 10.)) * 0.2 * (0.1/bounds);
         float randZ = sin(sin(uTime * 2.) * (y/yLength) * 5. * bounds * cos(bounds * 10.)) * 0.2 * (0.1/bounds);
 
-        float randFunc = mix(0.,1.,(xzVector.x * xzVector.y));
+        float randFunc = mix(0.,1.,(xzVector.x * xzVector.y) * sin(uTime));
         float putOutDisplacement = mix(
             putOutFireDisplacementFunction(y,position.y * uYLength),
             putOutFireDisplacementOppositeFunction(y,position.y * uYLength),

@@ -144,7 +144,7 @@ export default function Fire({
 
         //RANDOM FLAME MOVEMENT
         const randPeakDistanceChange = (Math.sin(time) + 1) * 0.75 - 1;
-        intensityMultiplier.current = (randPeakDistanceChange*2 + dynamicYLength + 1.5)*0.5/dynamicYLength * pointsUniforms.current.uOnFireFactor.value;
+        intensityMultiplier.current = (randPeakDistanceChange*2 + dynamicYLength + 1.5)*0.5/dynamicYLength * MathUtils.lerp(0.1,1.,pointsUniforms.current.uOnFireFactor.value);
 
         pointsUniforms.current.uOriginPeakDistance.value = dynamicYLength + change.current/2 + randPeakDistanceChange;
         peakPos.current = [peakPos[0],pointsUniforms.current.uOriginPeakDistance.value/2,peakPos[2]];
