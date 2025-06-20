@@ -134,12 +134,8 @@ export default function Fire({
             const newSideDistance = newHeightVector.distanceTo(newPeakVector);
             pointsUniforms.current.uSideDistance.value = newSideDistance;
 
-            if(checkerYLength/2 <= 0.5 && dynamicYLength/2 <= 1.6) 
-            {
+            if(checkerYLength/2 <= 0.5 && dynamicYLength/2 <= 1.5) 
                 wasPutOutRef.current = true;
-                console.log(newPeakVector);
-                console.log(checkerYLength + " | " + wasPutOutRef.current);
-            }
         }
 
         //RANDOM FLAME MOVEMENT

@@ -5,7 +5,7 @@ import Match from "./Match";
 import { useFrame } from '@react-three/fiber';
 import * as THREE from "three";
 
-export default function Fingies(props) {
+export default function Fingies({position, rotation, setColorChange}) {
   const group = useRef()
   const { nodes, materials, animations } = useGLTF('/models/fingies.glb')
   const { actions, names } = useAnimations(animations, group)
@@ -24,6 +24,7 @@ export default function Fingies(props) {
   const prevEuler = useRef(new THREE.Euler(0,0,0));
   const matchVelocity = useRef(new THREE.Vector3(0,0,0));
   const wasPutOutRef = useRef(false);
+  const prevWasPutOutRef = useRef(false);
 
   const rigidBodyProps = {
     position:[0,0,0],
@@ -62,7 +63,13 @@ export default function Fingies(props) {
   },[])
 
   useFrame(()=>{
+    console.log(typeof(matchRigidBody.current));
+    if(!matchRigidBody.current.isValid()) return;
     matchVelocity.current = vec3(matchRigidBody.current.linvel());
+
+    if(!wasPutOutRef.current && prevWasPutOutRef.current) setColorChange();
+    prevWasPutOutRef.current = wasPutOutRef.current;
+
     if(wasPutOutRef.current) return;
 
     burnProgress.current -= 0.001;
@@ -144,7 +151,7 @@ export default function Fingies(props) {
 
   return (
     <group>
-      <group ref={group} {...props} dispose={null}>
+      <group ref={group} position={position} rotation={rotation} dispose={null}>
         <group name="Scene">
           <group name="Armature">
             <group name="Cube">
