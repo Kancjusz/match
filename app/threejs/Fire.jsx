@@ -1,4 +1,4 @@
-import { Points } from "@react-three/drei";
+import { Points, useDetectGPU } from "@react-three/drei";
 import { useEffect, useRef } from "react";
 import { MathUtils, Vector2, Vector3, Vector4 } from "three";
 import {vertex, fragment} from "./shaders/fireParticlesShader";
@@ -10,6 +10,9 @@ export default function Fire({
         peakPointCallback = null, wasPutOutRef = null
     })
 {
+    const GPU = useDetectGPU();
+    const isMobile = (GPU.tier === 0 || GPU.isMobile);
+
     const originVector = new Vector3(origin[0],origin[1],origin[2]);
     const peakVector = new Vector3(peakPoint[0],peakPoint[1],peakPoint[2]);
     const heightVector = new Vector3(origin[0],peakPoint[1],origin[2]);
@@ -31,6 +34,7 @@ export default function Fire({
     const pointerPos = useRef(new Vector2(0,0));
     const prevTime = useRef(0);
     const pointerOut = useRef(true);
+    const isTouch = useRef(false);
 
     const pointsUniforms = useRef({
         uTime: {value:0},
@@ -83,7 +87,10 @@ export default function Fire({
         pointerPos.current = new Vector2(x,y);
         pointerOut.current = false;
     }
-    function onTouchUpEvent(e){pointerOut.current = true;}
+    function onTouchUpEvent(e){
+        isTouch.current = true;
+        pointerOut.current = true;
+    }
 
     function onMouseMove(e)
     {
@@ -91,7 +98,8 @@ export default function Fire({
         const y = (e.clientY/window.innerHeight) * -2 + 1;
 
         pointerPos.current = new Vector2(x,y);
-        pointerOut.current = false;
+        if(!isTouch.current)
+            pointerOut.current = false;
     }
     function onMouseOut(e){pointerOut.current = true;}
 
@@ -111,7 +119,7 @@ export default function Fire({
         })
     },[])
 
-    useFrame(({clock,camera})=>{
+    useFrame(({clock,camera},delta)=>{
         const time = clock.getElapsedTime(); 
 
         const pointer = pointerPos.current;
@@ -135,6 +143,7 @@ export default function Fire({
 
         //SET POINTER TO UNIFORMS
         pointsUniforms.current.uPointer.value = pointerOut.current ? new Vector2(-1,-1) : pointerToWorldFov;
+        console.log(pointsUniforms.current.uPointer.value.x + " | " + pointerOut.current);
 
         //FLAME SHIFT BASED ON POINTER MOVEMENT
         if(Math.abs(pointerToWorldFov.x - prevPointerPos.current.x) >= 10) prevPointerPos.current = pointerToWorldFov;
@@ -177,13 +186,17 @@ export default function Fire({
             const newSideDistance = newHeightVector.distanceTo(newPeakVector);
             pointsUniforms.current.uSideDistance.value = newSideDistance;
 
-            if(checkerYLength/2 <= 0.5 && dynamicYLength/2 <= 1.5) 
+            const mobileModifier = isMobile ? 1.5 : 1;
+
+            if(checkerYLength/2 <= 0.5 * mobileModifier && dynamicYLength/2 <= 1.5 * mobileModifier) 
                 wasPutOutRef.current = true;
         }
 
         //RANDOM FLAME MOVEMENT
         const randPeakDistanceChange = (Math.sin(time) + 1) * 0.75 - 1;
-        intensityMultiplier.current = (randPeakDistanceChange*2 + dynamicYLength + 1.5)*0.5/dynamicYLength * MathUtils.lerp(0.1,1.,pointsUniforms.current.uOnFireFactor.value);
+        intensityMultiplier.current = 
+            (randPeakDistanceChange*2 + dynamicYLength + 1.5)*0.5/dynamicYLength * MathUtils.lerp(0.1,1.,pointsUniforms.current.uOnFireFactor.value) 
+            * (isMobile ? 2 : 1);
 
         pointsUniforms.current.uOriginPeakDistance.value = dynamicYLength + change.current/2 + randPeakDistanceChange;
         peakPos.current = [peakPos[0],pointsUniforms.current.uOriginPeakDistance.value/2,peakPos[2]];
@@ -197,12 +210,13 @@ export default function Fire({
 
         if(pointsUniforms.current.uFlameRise.value >= dynamicYLength2)
             pointsUniforms.current.uFlameRise.value = 0;
-        pointsUniforms.current.uFlameRise.value += 0.01 * MathUtils.lerp(0.5, 1, pointsUniforms.current.uOnFireFactor.value);
+        pointsUniforms.current.uFlameRise.value += 0.85 * delta * MathUtils.lerp(0.5, 1, pointsUniforms.current.uOnFireFactor.value);
 
         if(wasPutOutRef.current && pointsUniforms.current.uOnFireFactor.value > 0)
             pointsUniforms.current.uOnFireFactor.value -= 0.1;
         else if(!wasPutOutRef.current && pointsUniforms.current.uOnFireFactor.value < 1)
             pointsUniforms.current.uOnFireFactor.value += 0.1;
+
     });
 
     return(
@@ -221,16 +235,11 @@ export default function Fire({
                     toneMapped={false}
                 />
             </Points>
+            
             <FirePointLight positionRef={originPos} offset={[0,0.5,0.5]} intensityMultiplierRef={intensityMultiplier}/>
             <FirePointLight positionRef={originPos} offset={[0,0.5,-0.5]} intensityMultiplierRef={intensityMultiplier}/>
             <FirePointLight positionRef={originPos} offset={[0.5,0.5,0]} intensityMultiplierRef={intensityMultiplier}/>
             <FirePointLight positionRef={originPos} offset={[-0.5,0.5,0]} intensityMultiplierRef={intensityMultiplier}/>
-            <FirePointLight positionRef={originPos} offset={[0,1,0.5]} intensityMultiplierRef={intensityMultiplier}/>
-            <FirePointLight positionRef={originPos} offset={[0,1,-0.5]} intensityMultiplierRef={intensityMultiplier}/>
-            <FirePointLight positionRef={originPos} offset={[0.5,1,0]} intensityMultiplierRef={intensityMultiplier}/>
-            <FirePointLight positionRef={originPos} offset={[-0.5,1,0]} intensityMultiplierRef={intensityMultiplier}/>
-
-            <FirePointLight positionRef={peakPos} offset={[0,0,0]} intensityMultiplierRef={intensityMultiplier}/>
         </group>
     );
 }

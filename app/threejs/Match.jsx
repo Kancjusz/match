@@ -1,7 +1,7 @@
-import { useGLTF } from '@react-three/drei';
+import { useDetectGPU, useGLTF } from '@react-three/drei';
 import {vertexStick, fragmentStick, vertexHead, fragmentHead} from "./shaders/matchShader";
 import { useFrame } from '@react-three/fiber';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import Fire from "./Fire";
 import CustomShaderMaterial from 'three-custom-shader-material'
 import * as THREE from "three";
@@ -11,6 +11,9 @@ export default function Match({
   burnProgressPropRef = null, flameCorrectedRotationRef = null, matchVelocityRef = null, wasPutOutRef = null
 }) {
   const { nodes, materials } = useGLTF('/models/match.glb')
+  const GPU = useDetectGPU();
+  const isMobile = (GPU.tier === 0 || GPU.isMobile);
+
   const peakPoint = [0,6,90];
 
   const burnDirection = useRef(new THREE.Vector2((Math.random()-0.5)*2 * maxDistance,(Math.random()-0.5)*2 * maxDistance));
@@ -100,12 +103,12 @@ export default function Match({
         </mesh>
       </group>
       <group position={[0,matchPos.y+yTipCoord-1.5,0]} ref={fireGroupRef} >
-        <Fire count={120000} origin={[0,-0.2,90]} 
+        <Fire count={2000 * (isMobile?6:60)} origin={[0,-0.2,90]} 
           peakPoint={peakPoint} 
           peakPointCallback={peakDisplacementVector}
-          smokeColor={[0.5,0.5,0.5,0.05]} yDisplacement={0.7}
-          fireColors={[[0,0,0,0],[0.6,0.9,1,0.005],[1,0.5,0,0.1],[1,1,0,0.4],[1,1,1,0.4],[1,1,0,0.4],[1,0.5,0,0.5]]}
-          midDistanceColors={[[1,1,0,0.01],[1,0.5,0,0.02],[1,0.1,0,0.05]]} midColorStrength={0.7} size={1.5} change={change}
+          smokeColor={[0.5,0.5,0.5,0.05 * (isMobile?50:1)]} yDisplacement={0.7}
+          fireColors={[[0,0,0,0],[0.6,0.9,1,0.005 * (isMobile?10:1)],[1,0.5,0,0.1 * (isMobile?3:1)],[1,1,0,0.4 * (isMobile?2:1)],[1,1,1,0.4 * (isMobile?2:1)],[1,1,0,0.4],[1,0.5,0,0.5]]}
+          midDistanceColors={[[1,1,0,0.01 * (isMobile?10:1)],[1,0.5,0,0.02 * (isMobile?7:1)],[1,0.1,0,0.05 * (isMobile?5:1)]]} midColorStrength={0.7} size={1.5} change={change}
           wasPutOutRef={wasPutOutRef}
         />
       </group>

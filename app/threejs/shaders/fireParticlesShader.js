@@ -129,7 +129,7 @@ export const vertex = `
         finalPos.z = uOriginPos.z + xzVector.y * bounds + uPeak2Normalized.y * uSideDistance * displacementMultiplier + randZ;
 
         //SETTING PUT OUT FIRE WORLD POS
-        putOutPos.x = uOriginPos.x + xzVector.x * putOutBounds + putOutDisplacement + randX;;
+        putOutPos.x = uOriginPos.x + xzVector.x * putOutBounds + putOutDisplacement + randX;
         putOutPos.y = uOriginPos.y + y;
         putOutPos.z = uOriginPos.z + xzVector.y * putOutBounds + putOutDisplacement + randZ;
 
@@ -137,7 +137,7 @@ export const vertex = `
 
         vec3 firePos = mix(putOutPos,finalPos,uOnFireFactor);
 
-        float cameraDist = distance(cameraPosition,(modelMatrix * vec4(firePos, 1.0)).xyz);
+        float cameraDist = distance(cameraPosition.xyz,firePos.xyz);
 
         cameraDist = clamp(cameraDist / (distance(cameraPosition,vec3(0.))),0.,1.);
 
@@ -145,7 +145,7 @@ export const vertex = `
         float PointPeakDistance = distance(firePos,uOriginPos + vec3(0.,uYDisplacement,0.));
         vPointOriginRatio = PointPeakDistance/(uOriginPeakDistance-uYDisplacement);
 
-        gl_PointSize = 15. * (1.-cameraDist);
+        gl_PointSize = 15. * (1.-cameraDist) * (4.-sqrt(9.*uWidthRatio));
 
         vec4 finalProjectedPos = pointerDisplacedPosition(firePos,PointPeakDistance);
         
