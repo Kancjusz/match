@@ -24,3 +24,47 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+@-webkit-keyframes animate-stripes {
+   100% { background-position: -100px 0px; }
+}
+
+@keyframes animate-stripes {
+   100% { background-position: -100px 0px; }
+}
+
+progress {
+  -webkit-animation: animate-stripes 5s linear infinite;
+  animation: animate-stripes 5s linear infinite;
+
+  border-radius: 10px; 
+  box-shadow: 1px 1px 4px rgba( 0, 0, 0, 0.2 );
+}
+progress::-webkit-progress-bar {
+  background-color: rgba(128, 128, 128, 0.315);
+  box-shadow: 1px 1px 4px rgba( 0, 0, 0, 0.2 );
+  border-radius: 10px;
+}
+
+progress::-webkit-progress-value {
+  transition: all 0s;
+
+  background-image:
+	   -webkit-linear-gradient(-45deg, 
+	                           transparent 10%, rgba(0, 0, 0, .1) 10%, 
+	                           rgba(0,0, 0, .1) 20%, transparent 20%, rgba(0, 0, 0, .1) 30%, transparent 30%, 
+	                           rgba(0,0, 0, .1) 40%, transparent 40%, 
+	                           transparent 50%, rgba(0, 0, 0, .1) 50%, 
+	                           rgba(0,0, 0, .1) 60%, transparent 60%, rgba(0, 0, 0, .1) 70%, transparent 70%, 
+	                           rgba(0,0, 0, .1) 80%, transparent 80%, rgba(0,0, 0, .1) 90%, transparent 90%), 
+	   -webkit-linear-gradient(top, 
+	                           rgba(255, 255, 255, .25), 
+	                           rgba(0, 0, 0, .25)),
+	   -webkit-linear-gradient(left, red, orange, yellow, white);
+  border-radius: 10px;
+  background-size: 200px 100%, 100% 100%, 100% 100%;
+  background-position: 0 0px;
+}
+progress::-moz-progress-bar {
+
+}

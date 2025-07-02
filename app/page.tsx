@@ -1,13 +1,15 @@
 'use client';
 
 import { Canvas } from "@react-three/fiber";
-import Fingies from "./threejs/Fingies";
+//import Fingies from "./threejs/Fingies";
+import Loader from "./threejs/Loader";
 import BackgroundPlane from "./threejs/BackgroundPlane"
-import { Suspense, useState } from "react";
+import React, { ComponentType, lazy, Suspense, useState } from "react";
 import * as THREE from "three";
 import { Bloom, EffectComposer } from "@react-three/postprocessing";
 import { KernelSize } from 'postprocessing'
 import { PerspectiveCamera, useDetectGPU } from "@react-three/drei";
+const Fingies = lazy(() => fakeDelay(import('./threejs/Fingies')));
 //import { Perf } from "r3f-perf";
 
 export default function Home() {
@@ -40,7 +42,7 @@ export default function Home() {
           />
         </EffectComposer>}
         <BackgroundPlane position={[0,0,50]} colorChange={colorChange}/>
-        <Suspense>
+        <Suspense fallback={<Loader/>}>
           <Fingies position={[-0.85,-14,89.2]} rotation={[0,-Math.PI/2.7,0]} setColorChange={()=>setColorChange(a=>!a)}/>
         </Suspense>
         <pointLight position={[-10,10,100]} color={"white"} intensity={35 * intensityModifier} decay={2}/>
@@ -48,4 +50,12 @@ export default function Home() {
       </Canvas>
     </div>
   );
+}
+
+function fakeDelay(
+  promise:Promise<{default:ComponentType<{position:number[],rotation:number[],setColorChange:(value: React.SetStateAction<boolean>) => void}>}> // I hate typescript
+) {
+  return new Promise(resolve => {
+    setTimeout(resolve, 0);
+  }).then(() => promise);
 }

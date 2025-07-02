@@ -143,7 +143,6 @@ export default function Fire({
 
         //SET POINTER TO UNIFORMS
         pointsUniforms.current.uPointer.value = pointerOut.current ? new Vector2(-1,-1) : pointerToWorldFov;
-        console.log(pointsUniforms.current.uPointer.value.x + " | " + pointerOut.current);
 
         //FLAME SHIFT BASED ON POINTER MOVEMENT
         if(Math.abs(pointerToWorldFov.x - prevPointerPos.current.x) >= 10) prevPointerPos.current = pointerToWorldFov;
